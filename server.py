@@ -153,7 +153,6 @@ def katri():
 
             # (2) href 에서 goPDF 인자 추출
             href = link_elem.get_attribute("href") or ""
-            print("HREF!!:",href)
             m = GO_PDF_RE.search(href)
             if not m:
                 return jsonify(error="goPDF 링크를 파싱하지 못했습니다."), 404
