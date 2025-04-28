@@ -13,6 +13,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import io, zipfile, time, traceback
+import fitz
+import cv2, numpy as np
 
 app = Flask(__name__)
 
@@ -24,6 +26,7 @@ PNG_SCROLL_DELAY = 0.3
 def health():
     return "server avaliable"
 
+# ------------------------------------------------------------------------------------------------ FITI
 # POST FITI
 @app.route("/fiti", methods=["POST"])
 def fiti():
@@ -99,13 +102,34 @@ def fiti():
         return jsonify({"status": "error",
                         "message": "Selenium 처리 중 오류가 발생했습니다."}), 500
 
+# ------------------------------------------------------------------------------------------------ KOTITI
+def pdf_first_page_bytes_to_numpy(pdf_bytes: bytes, dpi: int = 300) -> np.ndarray:
+    """바이트 버퍼로 받은 PDF 첫 페이지를 렌더링해 NumPy BGR 이미지 반환"""
+    with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+        page = doc.load_page(0)
+        zoom = dpi / 72
+        pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
+        img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3)
+        return cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
+
+def read_qr_from_pdf_bytes(pdf_bytes: bytes, dpi: int = 300) -> str | None:
+    cv_img = pdf_first_page_bytes_to_numpy(pdf_bytes, dpi)
+    data, *_ = cv2.QRCodeDetector().detectAndDecode(cv_img)
+    return data or None
 
 @app.route("/kotiti", methods=["POST"])
 def kotiti():
-    return "ok"
+    file = request.files.get("pdf")
+    if not file:
+        return jsonify(error="pdf 파일을 첨부해 주세요."), 400
+    pdf_bytes = file.read()                         # 메모리로 전체 읽기
+    qr_text = read_qr_from_pdf_bytes(pdf_bytes)
+
+    return qr_text
 
 
+# ------------------------------------------------------------------------------------------------ Katri
 @app.route("/katri", methods=["POST"])
 def katri():
     return "ok"
