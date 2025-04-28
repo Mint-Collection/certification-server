@@ -20,6 +20,10 @@ app = Flask(__name__)
 FITI_URL = "https://www.fiti.re.kr/cs/contents/CS0401010000.do"
 PNG_SCROLL_DELAY = 0.3         
 
+@app.route('/')
+def health():
+    return "server avaliable"
+
 # POST FITI
 @app.route("/fiti", methods=["POST"])
 def fiti():
